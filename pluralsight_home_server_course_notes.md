@@ -8,7 +8,7 @@ Notes from the PluralSight Raspberry Pi Home Server Course
 
 Raspbian is the officially supported Linux distro. Recommend the full (desktop) version for a home server.
 
-Download and write the image according the the instructions on [RaspberryPi.org](https://www.raspberrypi.org/downloads/raspbian/).
+Download and write the image according the the instructions on [RaspberryPi.org/downloads/raspbian](https://www.raspberrypi.org/downloads/raspbian/).
 
 Instructions as of the time of the course:
 
@@ -43,6 +43,8 @@ On Mac/Linux it is similar to the install command, but in reverse.
 ```bash
 sudo dd if=/dev/diskn of=~/pi.img bs=1m
 ```
+
+This is a bit-for-bit copy, which means a lot of it is wasted space. Compress it to save hard drive space.
 
 Shutdown command:
 ```bash
@@ -238,14 +240,59 @@ Reboot and confirm that the partitions are mounted by confirming that our placeh
 
 ### Installing Samba
 
-Samba is a way to share files using the SMB (server message block) protocol. CIFS or Common Internet File System is an implementation of the SMB protocol, but the two terms are used interchangeably.
+Samba is a way to share files using the SMB (server message block) protocol. CIFS or Common Internet File System is an implementation of the SMB protocol, but the two terms tend to be used interchangeably.
+
+Installation instructions can be found at https://www.raspberrypi.org/documentation/remote-access/samba.md.
 
 There are two packages needed that are both available from the package manager.
 ```bash
 sudo apt-get install samba samba-common-bin
 ```
 
-Make a public directory to share from.
+Make a public directory to share from. Then grant `write` permission to `group` and `other` to give access to everyone on the network.
 ```bash
 sudo mkdir /mnt/data/public
 ```
+
+### Linux Permissions
+
+Files and directories have three sets of permissions that can be allowed or disallowed: read, write, and execute. There are three types of users that permissions can be assigned to: user, group, and other, which is everyone else.
+
+Octal permissions make it possible to specify the permissions with a single number.
+- Read = 4
+- Write = 2 
+- Execute = 1
+Add these up to get the permissions for a user, group, or other. For example, octal permissions of `755` would give the user read, write, and execute; the group read and execute; and other read only permission. This is can also be written as `rwxr-xr--`.
+
+A handy website to encode or decode octal permissions: http://permissions-calculator.org/
+
+### Setting up Shares
+
+To set up Samba shares on webmin:
+1. Navigate to webmin at https://192.168.0.2:10000.
+1. Since Samba was not installed when we originally setup webmin, it will be hidden away under Un-used Modules. Click Refresh Modules to get it to recognize Samba.
+1. Navigate to the Samba config under Servers >> Samba Windows File Sharing.
+1. Click on Windows Networking.
+1. Ensure `Workgroup` is set to `WORKGROUP`. (Change this if your local Windows system has a different workgroup name than this default.)
+1. Set `WINS mode` to `Be WINS server`. This stands for "Windows Internet Name Service," and it allows you to refer to other devices on the network by name instead of by address.
+1. Click `Save` to save and return to the main Samba config page.
+1. Back on the main Samba config page, click Create a New File Share.
+1. Fill in a `Share name`, such as `public`.
+1. Select the `public` directory created above under `Directory to share`.
+1. Leave the other default settings. Click `Create` to save and return to the main Samba config page.
+1. Select the new `public` share under the `Share Name` list.
+1. Click `Security and Access Control`.
+1. Set both `Writable?` and `Guest Access?` to `Yes`.
+1. Click `Save` twice to return to the file share list.
+1. Verify the new `public` has a `Security` setting of `Read/write to everyone`.
+1. Click `Restart Samba Servers` for the settings to take effect across the network.
+
+Note, I had to add `force user = pi` to the config in order to connect to a share on the external drive. The final config:
+```
+[public]
+  writeable = yes
+  path = /media/pi/calaway-2tb/public
+  public = yes
+  force user = pi
+```
+
