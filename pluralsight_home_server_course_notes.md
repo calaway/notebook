@@ -145,6 +145,8 @@ Download the RealVNC client from [their website](https://www.realvnc.com/en/) an
 
 ## Adding External Storage
 
+__Note:__ I found it useful to _not_ skip this section, even though Raspbian mounted the drive autimatically, so you can specify the mount options in the `fstab` file.
+
 ### Partitioning the Drive
 
 If necessary to power the external hard drive, the USB power output can be increased by editing the boot config with
@@ -229,9 +231,9 @@ sudo nano /etc/fstab
 
 The following three syntax options are equivalent.
 ```
-/dev/disk/by-uuid/<<uuid>>  /mnt/data ext4  defaults/noatime  0  0
-UUID=<<uuid>>               /mnt/data ext4  defaults/noatime  0  0
-PARTUUID=<<partuuid>>       /mnt/data ext4  defaults/noatime  0  0
+/dev/disk/by-uuid/<<uuid>>  /mnt/data ext4  defaults,noatime  0  0
+UUID=<<uuid>>               /mnt/data ext4  defaults,noatime  0  0
+PARTUUID=<<partuuid>>       /mnt/data ext4  defaults,noatime  0  0
 ```
 
 Reboot and confirm that the partitions are mounted by confirming that our placeholder files are not visible.
@@ -287,7 +289,16 @@ To set up Samba shares on webmin:
 1. Verify the new `public` has a `Security` setting of `Read/write to everyone`.
 1. Click `Restart Samba Servers` for the settings to take effect across the network.
 
-Note, I had to add `force user = pi` to the config in order to connect to a share on the external drive. The final config:
+### Troubleshooting
+
+Make sure directories are readable and executable for all users, including those leading up to the mount point. From [this article](https://pimylifeup.com/raspberry-pi-plex-server/):
+```bash
+sudo find /media/pi -type d -exec chmod go+rx {} \;
+# A similar command can optionally be run for all files, but without making them executable.
+sudo find /media/pi -type f -exec chmod go+r {} \;
+```
+
+If you're still having permissions issues after that you can add `force user = pi` to the config to connect as the `pi` user. The final config:
 ```
 [public]
   writeable = yes
@@ -295,4 +306,298 @@ Note, I had to add `force user = pi` to the config in order to connect to a shar
   public = yes
   force user = pi
 ```
+
+## Sharing Media with DLNA
+
+### What is DLNA?
+
+DLNA, the Digital Living Network Alliance is a standards body that developed a standard network protocol for sharing media.
+
+### Choosing a Media Server
+
+There are multiple DLNA implementations. We will discuss the most popular two for Raspberry Pi here, MiniDLNA and Plex.
+
+__MiniDLNA, A.K.A ReadyMedia__
+- Works on all Raspberry Pi models
+- No user interface
+- Webmin module available (but not very helpful)
+- Not always up to date on `apt-get`
+- Works better with some media players (like Windows Media Player)
+
+__Plex Media Server__
+- Only works on Pi 2 and above
+- Fancier, full-featured interface
+- Can transcode some (not all) media
+- Needs some tweaks to set up
+- Doesn't get along with Windows Media Player
+
+Note that you cannot run both at the same time, since they serve on the same port.
+
+### Installing MiniDLNA
+
+Steps:
+1. Install MiniDLNA via `apt-get`
+1. Setup directories on the hard drive to house your media
+1. Configure DLNA to say what kind of media is in each directory
+1. Stream media throughout the house
+
+Install:
+```bash
+sudo apt-get install minidlna
+```
+Note that the versions on Raspbian have not historically been kept up to date, so you might want to check your version and look into upgrading it before proceeding.
+
+### Creating a Media Library
+
+Create a directory for MiniDLNA to keep its database and logs. Then change the `owner` and `group` to `minidlna`. Let's put it at the root of the external drive.
+```bash
+# Navigate to the external hard drive.
+cd /media/pi/{{external-hdd}}
+
+# Make a new directory.
+sudo mkdir minidlna
+
+# Change the `owner` and `group` to `minidlna`
+sudo chown minidlna:minidlna minidlna
+
+# Make a new directory for music files in the shared `public` directory
+cd public
+mkdir music
+
+# Change the `owner` and `group` to `nobody` and `nogroup`. Of course these aren't real users, but this will effectively assign ownership to everyone.
+sudo chown nobody:nogroup music
+```
+These could also be created on another computer connecting to the Pi via Samba.
+
+### Configuring MiniDLNA
+
+Open the MiniDLNA config file for editing.
+```bash
+sudo nano /etc/minidlna.conf
+```
+Follow the templates in the file and add all media directories. It might look something like this.
+```conf
+media_dir=A, /media/pi/{{external-hdd1}}/public/music
+media_dir=P, /media/pi/{{external-hdd1}}/public/pictures
+media_dir=V, /media/pi/{{external-hdd1}}/public/video
+media_dir=A, /media/pi/{{external-hdd2}}/public/music
+media_dir=P, /media/pi/{{external-hdd2}}/public/pictures
+media_dir=V, /media/pi/{{external-hdd2}}/public/video
+
+# Set the database and log directories
+db_dir=/media/pi/{{external-hdd}}/minidlna
+log_dir=/media/pi/{{external-hdd}}/log
+```
+
+Restart the `minidlna` service to pick up the new configuration.
+```bash
+sudo service minidlna restart
+# Check the status to see that it's running
+sudo service minidlna status
+# Check the logs
+sudo cat /media/pi/{{external-hdd}}/minidlna/log/minidlna.log | more
+# Note the warning the Inotify max_user_watches [8192] is low. Open the conf file to increase that.
+sudo nano /etc/sysctl.conf
+```
+
+Add the following to the bottom of the file.
+```conf
+# minidlna tweaks
+fs.inotify.max_user_watches = 65536 # Apparently the lowest number MiniDLNA won't complain about
+```
+
+Have MiniDLNA startup automatically whenever the server starts up.
+```bash
+sudo update-rc.d minidlna defaults
+```
+
+You can see what effect this is having on the Pi's processor(s) with `top` or `htop`.
+
+### Updating MiniDLNA
+
+Note that this is not necessary if the version in the apt-get sources is already up to date.
+
+Update the sources file
+```bash
+sudo nano /etc/apt/sources.list
+```
+
+Copy the top line and change the version name to the current version.
+```
+deb http://raspbian.raspberrypi.org/raspbian/ wheezy main contrib non-free rpi
+deb http://raspbian.raspberrypi.org/raspbian/ jessie main contrib non-free rpi
+```
+```bash
+# Update all packages
+sudo apt-get update
+
+# Stop the minidlna service
+sudo service minidlna stop
+
+# Update minidlna with the same command we used to install it the first time
+sudo apt-get install minidlna
+```
+This may ask to restart some services, which is fine, and may need to overwrite the config file. If so, make the config changes to `/etc/minidlna.conf` above again.
+
+Then go back to `/etc/apt/sources.list` and comment out the `jessie` line and `sudo apt-get update` again to forget about the Jessie repository.
+
+Check the installed version as well as the current remote version with `apt-cache policy minidlna`.
+
+Reboot the server and make sure MiniDLNA is running as expected, `sudo reboot`.
+
+### Plex Media Server
+
+Plex is a little fancier and user friendls than MiniDLNA. It requires at least a Raspberry Pi 2 and provides a convenient web framework for configuration. It can also transcode media to play files that might otherwise be unsupported by the device playing them, but your mileage may vary on a low powered device like the Pi.
+
+### Installing Plex Media Server
+
+The basic steps are the same as for setting up MiniDLNA
+1. Install
+1. Setup directories
+1. Configure
+1. Stream media throughout the house
+
+First of all, do not run both MiniDNLA and Plex at the same time because they'll fight over the network port.
+
+It looks like the instructions on the video are outdated, so I'm going to instead follow the [instrucitons from Plex](https://support.plex.tv/articles/235974187-enable-repository-updating-for-supported-linux-server-distributions/). Instructions from the course are still outlined below, you know, for posterity.
+
+Installation will look similar to `webmin`, where we needed to add and validate the source repository before installation.
+
+```bash
+# Change users to the super user
+sudo su
+
+# Download the signing key for the sources repository
+cd /root
+wget http://dev2day.de/pms/dev2day-pms.gpg.key
+
+# Install the signing key
+apt-key add dev2day-pms.gpg.key
+
+# Exit super user
+exit
+
+# Create and edit a new sources file
+sudo nano /etc/apt/sources.list.d/pms.list
+```
+
+Add the following line, matching the Debian version from `/etc/apt/sources.list`.
+```
+deb http://dev2day.de/pms/ wheezy main
+```
+
+```bash
+# Update and install
+sudo apt-get update
+sudo apt-get install plexmediaserver
+
+# Verify the service is running
+sudo service plexmediaserver status
+```
+
+Follow the instructions from [Creating a Media Library](Creating-a-Media-Library) above to create directories for your media.
+
+### Configuring Plex
+
+Visit the Plex web UI at http://192.168.0.2:32400/web/.
+
+If you choose to move the Plex database from the default location in the `/var/lib/plexmediaserver` directory onto the external drive, here are the instructions. (Note, I decided to leave it in the default location.)
+```bash
+# Stop the Plex Media Server service
+sudo service plexmediaserver stop
+# Check to see if there are any leftover processes owned by the plex user
+htop
+# Kill any leftover processes owned by the plex user
+sudo killall -u plex
+# Verify that they are all gone
+htop
+# Move the `plexmediaserver` directory
+sudo mv /var/lib/plexmediaserver/ /mnt/data/plexmediaserver/ # Note that the trailing slashes can be important to Linux
+# Verify that the files were moved successfully
+ls -l /mnt/data/plexmediaserver
+# Create a symbolic link from the old directory to the new directory
+sudo ln -s /mnt/data/plexmediaserver/ /var/lib/plexmediaserver/
+# Restart the Plex server
+sudo service plexmediaserver restart
+# You verify if Plex has any processes running
+htop
+```
+
+Now you're ready to start adding your media directories as libraries in the Plex web UI. If you can't see the directories on the external drive, see troubleshooting under the Sharing Files with Samba above.
+
+## Backing up Other Computers
+
+Notes:
+- An onsight backup is less safe than one offsite, since a disaster at home could take out both.
+- Consider that you may prefer an encrypted backup.
+
+Prerequisites:
+- Hard drive
+- Samba
+- You may need to map a port through your firewall if your backup is offsite
+
+### Windows Backup
+
+```bash
+# Create a directory for the backup
+cd /mnt/data
+sudo mkdir -p backups/desktop
+# Give group and others write permissions
+sudo chmod go+w backups backups/desktop
+# Create a Samba share
+sudo nano /etc/samba/smb.conf
+```
+
+Add a new share to the bottom of the file, giving it whatever name you prefer and copying the rest of the settings from the other shares we set up (remember to change the directory).
+```conf
+[backups]
+        path = /mnt/data/backups/desktop
+        writeable = yes
+        public = yes
+```
+
+In Windows:
+1. Open the backup options by hitting the Windows key and type `backup`
+1. Click More Options >> See Advanced Options >> Select Drive >> Add Network Location >> browse to the location of the share >> Turn On
+1. Back out to the backup settings and verify that automatic backup is enabled
+
+Note that this does not currently support encryption.
+
+### Duplicati
+
+[Duplicati](https://www.duplicati.com/) is an open source backup option that requires no installation on the Pi. All the work is done by the computer being backed up. It can keep multiple versions and supports encryption.
+
+Follow the instructions on their website to install Duplicati on the machine being backed up. Then open the web UI on localhost and follow the instructions to set up the backup.
+
+It is also possible For Duplicati to manage the backup via ssh, rather than Samba.
+
+### Remote Duplicati
+
+If you don't mind opening a port on your firewall, you can communicate outsid of your local network. There are risks involved, so proceed at your own risk.
+
+You could provide a strong password, but it is recommended to require key based authentication, which is far more secure, albeit less convenient.
+
+The process is to generate a key pair on the client, and then install the public key on the server. Note the order, since it may be counterintuitive. This is about getting the server to trust the client, and not the other way around.
+
+To generate a key pair, I recommend following the [instructions on GitHub](https://help.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh).
+
+Copy the newly generated public key, then open the authorized keys file on the Pi with `sudo nano ~/.ssh/authorized_keys`, and paste the public key at the bottom of the file, underneath any other keys that were already there.
+
+To stop accepting a password and require key based authentication, open the SSH config file with `sudo nano /etc/ssh/sshd_config`.
+- Change `#PermitRootLogin prohibit-password` to `PermitRootLogin no`
+- Uncomment `PubkeyAuthentication yes`
+- (Verify the key works before you) Change `#PasswordAuthentication yes` to `PasswordAuthentication no`
+- `ChallengeResponseAuthentication` should be set to `no`
+- Change `UsePAM yes` to `UsePAM no`
+
+Reload the SSH configuration with `sudo service ssh reload`.
+
+
+
+
+
+
+
+
+
 
