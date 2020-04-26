@@ -592,12 +592,117 @@ To stop accepting a password and require key based authentication, open the SSH 
 
 Reload the SSH configuration with `sudo service ssh reload`.
 
+## Virtual Private Networking with OpenVPN
 
+This will allow you to host your own VPN, so you can connect to the internet through your home network.
 
+Since originally publishing this course, a project called PiVPN has come along and made the process simple, friendly, and automated. Follow the instructions at [PiVPN.io](https://www.pivpn.io).
 
+## BitTorrent Sync: Your Own Private Cloud
 
+You can host your own private cloud that will sync files across your different devices using [Resilio Sync](https://help.resilio.com/hc/en-us). Follow the instructions on their website to get started.
 
+## WordPress
 
+WordPress is a popular blogging engine. You can setup a server on your Raspberry Pi to host your blog from home.
 
+WordPress runs on the LAMP stack, which uses Linux as the OS, Apache as the server, MySQL for the database, and PHP for the code.
 
+### Installing Apache
 
+Apache is the world's most popular web server. Install it with
+
+```bash
+sudo apt-get install apache2
+```
+
+This will install and start the Apache server. Test this by visiting the Pi's IP address (i.e. http://192.168.0.2). You should see the Apache2 Debian Default Page saying "It works!"
+
+### Installing MySQL
+
+```bash
+# Install MySQL
+sudo apt-get install mysql-server-5.5
+# Note: This returned an error stating that the package is not available and has been replaced by mariadb-server
+sudo apt-get install mariadb-server
+# Log into your MariaDB server from the command-line like so:
+sudo mysql -u root -p
+# Show all databases
+show databases;
+# Exit MariaDB
+exit
+# Run the secure installation script. In the tutorial he went with the default option for all questions.
+/usr/bin/mysql_secure_installation
+```
+
+### Installing PHP
+
+```bash
+# Install PHP, the PHP MySQL integration package, and a package to help with the graphics.
+sudo apt-get install php php-mysql php-gd
+```
+
+Unlike Apache and MySQL, there's no simple way to verify that PHP was installed successfully, other than to install something that uses it, which in our case will be WordPress.
+
+### Installing WordPress
+
+Installation instructions can also be found on [WordPress.org](https://wordpress.org/support/article/how-to-install-wordpress/).
+
+```sql
+# Log back in to the MariaDB CLI to create a new DB for WordPress.
+sudo mysql -u root -p
+# Create a new database.
+create database wordpress;
+# Create a new user for wordpress to use.
+create user wpuser;
+# Set a password for the new user by passing it as a string to the `password` function.
+set password for wpuser = password("raspberry");
+# Give the new user full rights to the new database.
+grant all privileges on wordpress.* to wpuser@localhost identified by 'raspberry';
+# Exit the MariaDB CLI
+exit
+```
+```bash
+# Restart the MariaDB service
+sudo service mysql restart
+# We're now ready to install WordPress itself.
+sudo apt-get install wordpress
+# Everything in Linux looks like part of the file system, including web addresses. View the root folder for the web server.
+ls /var/www/html/
+# We can see the contents of the Apache's default "It works!" page.
+cat /var/www/html/index.html
+# Create a symbolic link to make the wordpress directory appear to be in this web server directory.
+sudo ln -s /usr/share/wordpress /var/www/html/wordpress
+# WordPress requires a config file. Backup the original and then copy the one from the sample provided with the installation.
+sudo cp /usr/share/wordpress/wp-config.php{,.original}
+sudo cp /usr/share/wordpress/wp-config-sample.php /usr/share/wordpress/wp-config.php
+# Edit the config.
+sudo nano /etc/wordpress/config-default.php
+```
+
+Fill in the following configurations:
+```sql
+/** The name of the database for WordPress */
+define('DB_NAME', 'wordpress');
+
+/** MySQL database username */
+define('DB_USER', 'wpuser');
+
+/** MySQL database password */
+define('DB_PASSWORD', 'raspberry');
+```
+
+Restart the apache service to pick up the new changes.
+```bash
+sudo service apache2 restart
+```
+
+Verify that everything worked by navigating to the wordpress site in your browser at http://192.168.0.2/wordpress.
+
+### Configuring WordPress
+
+Open the new wordpress web app in a browser at http://192.168.0.2/wordpress. Then setup a username and password and use it to log in.
+
+If you intend to expose the site to the internet, navigate to Settings >> General and update both the WordPress Address and Site Address to your domain.
+
+Go ahead and publish your first post!
