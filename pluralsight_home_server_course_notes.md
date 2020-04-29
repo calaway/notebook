@@ -706,3 +706,69 @@ Open the new wordpress web app in a browser at http://192.168.0.2/wordpress. The
 If you intend to expose the site to the internet, navigate to Settings >> General and update both the WordPress Address and Site Address to your domain.
 
 Go ahead and publish your first post!
+
+## Booting from the Hard Drive
+
+Is this right for you?
+
+Booting from the SD card:
+- Convenient
+- Portable
+- Simple backups
+- Finite SD lifespan
+
+Booting from the hard drive:
+- Faster than an SD card
+- Longer lifespan
+- Hard drive must remain attached
+- Larger backup files
+
+Before proceeding, run a check on your root file system as it is now. This can't be done while it's in use, but you can give the instruction to have it checked on the next boot by creating a file called `forcefsck` in the root directory.
+
+```bash
+sudo touch /forcefsck
+# Verify the file was created.
+ls /
+# Reboot
+sudo reboot
+```
+
+This is a one time operation, so the `forcefsck` file will be gone after it's done. Next find the root device.
+
+```bash
+# It's the `root=` divice from this file.
+cat /boot/cmdline.txt
+# Copy the contents, changing the input file and output files to your SD card and external divice, respectively.
+sudo dd if=/dev/mmcb1k02 of=/dev/sda1 bs=32M conv=noerror,sync
+# Check the target system for errors and allow them to be fixed.
+sudo e2fsck -f /dev/sda1
+# Expand the file system to take the full disk.
+sudo resizefs /dev/sda1
+# Find the partition GUID and copy it
+sudo gdisk /dev/sda
+i
+1
+# Update the cmdline.txt
+sudo nano /boot/cmdline.txt
+```
+
+Change `root=/dev/mmcb1k0p2` to `root=PARTUUID=<<UUID>>`. Then add `rootdelay=5` to the end of the line to give the system extra time to discover the drive.
+
+At this point you must reboot, since any other changes you make will be to the wrong file system.
+
+If anything goes wrong you can pop the SD card into another computer and revert `cmdline.txt` to `root=/dev/mmcblk0p2`.
+
+Edit `/etc/fstab` from `/dev/mmcblk0p2` to `/dev/disk/by-uuid/<<uuid>>`.
+
+Reboot the system again and verify the changes stuck in `/etc/fstab`.
+
+Now that you're booting from a larger disk you can increase the swap memory size if you want.
+
+```bash
+# View the current swap size.
+swapon -s
+# Edit the swapfile config.
+sudo nano /etc/dphys-swapfile
+```
+
+Change the `CONF_SWAPSIZE` value to whatever you like. In the tutorial he chose `2048` for two gigabytes.
