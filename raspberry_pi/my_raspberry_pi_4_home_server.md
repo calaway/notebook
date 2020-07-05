@@ -1,3 +1,20 @@
+## Install Ubuntu Server
+
+I installed Ubuntu 20.04 LTS (64-bit) from [here](https://ubuntu.com/download/raspberry-pi) using [these instructions](https://ubuntu.com/tutorials/how-to-install-ubuntu-on-your-raspberry-pi#1-overview). I did this entirely headlessly, without ever connecting the Pi to a monitor or keyboard. I plugged it directly into the router via ethernet, so there was no need to mess with wi-fi.
+
+## SSH
+
+I used SSH to connect to the Pi remotely.
+
+1. Log into the router at http://192.168.0.1. Navigate to `Modem Status >> Device Table`. Find the Pi's MAC address that began with `DC:A6:32` (for a Raspberry Pi 4).
+1. To assign a static IP address within the local network, navigate to `Advanced Setup >> DHCP Reservation`, under `4. Select MAC Address` select the MAC address or past it in manually, then select the desired IP address and click `Apply`. I assigned it to `192.168.0.3`.
+1. To give the Pi a human readable name on the local network, navigate to `Advanced Setup >> DNS Host Mapping`. I set this up with:
+    - DNS Host Name: `rphs` (**R**aspberry **P**i **H**ome **S**erver)
+    - IP Address: `192.168.0.3`
+    - Support Domain Name: `Disable`
+1. To SSH into the Pi, run `ssh ubuntu@rphs`.
+
+
 ## Dynamic DNS
 
 For setting up Dynamic DNS with Google Domains, I followed a combination of instructions from  [this](https://pimylifeup.com/raspberry-pi-port-forwarding/) Pi My Life Up tutorial, the [GitHub repo](https://github.com/ddclient/ddclient), and [Google's instructions](https://support.google.com/domains/answer/6147083?hl=en).
