@@ -125,10 +125,98 @@ Going back to Google Domains and looking at your Dynamic DNS record should also 
 
 ## Nextcloud
 
-I opted to install [Nextcloud via snap](https://snapcraft.io/install/nextcloud/ubuntu), and found [this article from Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-nextcloud-on-ubuntu-20-04) to be useful.
+I opted to install [Nextcloud via snap](https://snapcraft.io/install/nextcloud/ubuntu), and found [this article from Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-nextcloud-on-ubuntu-20-04) to be quite useful.
+
+#### Install
 
 ```bash
 sudo snap install nextcloud
 ```
 
-After the installation is finished, navigate to the server over LAN at http://rphs. It will prompt you to set admin credentials.
+After the installation is finished, navigate to the server via LAN at http://rphs. It will prompt you to set admin credentials.
+
+#### Set Trusted Domains
+
+```bash
+# View all current trusted domains
+sudo nextcloud.occ config:system:get trusted_domains
+# Set a second trusted domain in index 1
+sudo nextcloud.occ config:system:set trusted_domains 1 --value=rphs
+# Set a third trusted domain in index 2
+sudo nextcloud.occ config:system:set trusted_domains 2 --value=pi.my-site.com
+# Verify the updated list of trusted domains
+sudo nextcloud.occ config:system:get trusted_domains
+```
+
+#### External Hard Drive
+
+Follow the [wiki article](https://github.com/nextcloud/nextcloud-snap/wiki/Change-data-directory-to-use-another-disk-partition) to change data directory to use another disk partition. This [Stack answer](https://askubuntu.com/a/882696) was also helpful.
+
+```bash
+# Give the snap permission to access removable media by connecting that interface
+sudo snap connect nextcloud:removable-media
+# Verify the connection was added
+snap connections nextcloud
+# Make a copy and then edit the Nextcloud config
+sudo cp /var/snap/nextcloud/current/nextcloud/config/config.php{,.original}
+sudo vim /var/snap/nextcloud/current/nextcloud/config/config.php
+```
+
+```config
+# Change
+'datadirectory' => '/var/snap/nextcloud/common/nextcloud/data'
+# to the desired directory
+'datadirectory' => '/mnt/calaway_2tb/nextcloud/data'
+```
+
+```bash
+# Stop the snap from running for a moment
+sudo snap disable nextcloud
+# Copy the current data directory to the new place
+sudo cp -v /var/snap/nextcloud/common/nextcloud/data /mnt/calaway_2tb/nextcloud
+# Re-enable the snap:
+sudo snap enable nextcloud
+```
+
+## Tooling
+
+### Oh My Zsh
+
+Follow instructions from the [Oh My Zsh readme](https://github.com/ohmyzsh/ohmyzsh).
+
+```bash
+# Check to see if zsh is already installed
+zsh --version
+# If not, install it
+sudo apt install zsh --yes
+# Download and run the Oh My Zsh install script
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+```
+
+Copy over anything from `~/.bashrc` that you want. Note that `shopt` isn't available in Zsh, so don't copy any of that. Anything with the prompt didn't work for me either.
+
+Customizations:
+* Theme: `ZSH_THEME="avit"`
+* [Autosuggestions](https://github.com/zsh-users/zsh-autosuggestions/blob/master/INSTALL.md#oh-my-zsh)
+* [Syntax highlighting](https://github.com/zsh-users/zsh-syntax-highlighting/blob/master/INSTALL.md#oh-my-zsh)
+* [fasd](https://github.com/clvv/fasd/wiki/Installing-via-Package-Managers)
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
