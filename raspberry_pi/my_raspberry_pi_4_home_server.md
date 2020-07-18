@@ -56,15 +56,19 @@ ls /mnt/calaway_2tb
 # Since my drive was newly formatted, for me this only listed `lost+found`
 ```
 
-## Nextcloud
+## Port Forwarding
 
-I opted to install [Nextcloud via snap](https://snapcraft.io/install/nextcloud/ubuntu), and found [this article from Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-nextcloud-on-ubuntu-20-04) to be useful.
+Find the local IP address either by looking it up on your router's device table or by running `ifconfig | grep inet`.
 
-```bash
-sudo snap install nextcloud
-```
+Here's how I set up port forwarding on my CenturyLink Zyxel C3000Z, but with any luck the same steps can be translated to other routers.
 
-After the installation is finished, navigate to the server over LAN at http://rphs. It will prompt you to set admin credentials.
+1. Log into the router at http://192.168.0.1. Navigate to `Advanced Setup >> Port Forwarding`.
+1. Section 1: Select the Pi from the dropdown, or manually enter IP address.
+1. Section 2: Enter `80` for both the starting and ending ports.
+1. Section 3: Select `TCP` for the protocol.
+1. Section 4: Select `All IP Addresses`.
+1. Section 5: Click `Apply`.
+1. Repeat for port `443`.
 
 ## Dynamic DNS
 
@@ -118,3 +122,13 @@ You should receive the following message:
 SUCCESS:  engineerworkshop.com: skipped: IP address was already set
 Going back to Google Domains and looking at your Dynamic DNS record should also show your public IP address.
 ```
+
+## Nextcloud
+
+I opted to install [Nextcloud via snap](https://snapcraft.io/install/nextcloud/ubuntu), and found [this article from Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-nextcloud-on-ubuntu-20-04) to be useful.
+
+```bash
+sudo snap install nextcloud
+```
+
+After the installation is finished, navigate to the server over LAN at http://rphs. It will prompt you to set admin credentials.
