@@ -56,43 +56,65 @@ ls /mnt/calaway_2tb
 # Since my drive was newly formatted, for me this only listed `lost+found`
 ```
 
+## Nextcloud
+
+I opted to install [Nextcloud via snap](https://snapcraft.io/install/nextcloud/ubuntu), and found [this article from Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-nextcloud-on-ubuntu-20-04) to be useful.
+
+```bash
+sudo snap install nextcloud
+```
+
+After the installation is finished, navigate to the server over LAN at http://rphs. It will prompt you to set admin credentials.
+
 ## Dynamic DNS
 
-For setting up Dynamic DNS with Google Domains, I followed a combination of instructions from  [this](https://pimylifeup.com/raspberry-pi-port-forwarding/) Pi My Life Up tutorial, the [GitHub repo](https://github.com/ddclient/ddclient), and [Google's instructions](https://support.google.com/domains/answer/6147083?hl=en).
-
-Install `ddclient` and dependencies as per the tutorial. The version from the Debian repository was 3.8.3, Google Domains support was added in 3.9.0, so I upgraded from the GitHub repo.
+I followed [this tutorial](https://engineerworkshop.com/blog/connecting-your-raspberry-pi-web-server-to-the-internet/) to set up DDNS.
 
 ```bash
-# Clone the repo.
-git clone https://github.com/ddclient/ddclient.git
-cd ddclient
-# Checkout the latest tag.
-git checkout v3.9.1
-# Copy the original executable
-sudo cp -v /usr/sbin/ddclient{,.original}
-# Replace the executable with the version
-sudo cp -v ddclient /usr/sbin/ddclient
-# From the GitHub install instructions
-mkdir /etc/ddclient
-mkdir /var/cache/ddclient
-# Make a copy of the original config
-sudo cp -v /etc/ddclient.conf{,.original}
-# Copy the sample configuration from the repo to the new directory, and make a copy of the original
-sudo cp -v sample-etc_ddclient.conf /etc/ddclient/ddclient.conf
-sudo cp -v sample-etc_ddclient.conf /etc/ddclient/ddclient.conf.original
-# Edit the config file
-sudo nano /etc/ddclient/ddclient.conf
+# Install ddclient and go through the setup wizard
+sudo apt install ddclient
+# Make a copy of the original ddclient config file
+sudo cp /etc/ddclient.conf{,.original}
+# Edit the ddclient config
+sudo vim /etc/ddclient.conf
 ```
 
-Uncomment the following lines and fill in your own credentials and domain.
-```
-protocol=googledomains
-login=generated_username
-password=generated_password
-your_resource.your_domain.tld
+```conf
+# /etc/ddclient.conf
+
+daemon=300
+protocol=dyndns2
+use=web
+server=domains.google.com
+ssl=yes
+login=<username without quotes>
+password='<password - KEEP SINGLE QUOTES>'
+pi.my-site.com
 ```
 
-Restart the ddclient service.
 ```bash
-sudo /etc/init.d/ddclient restart
+# Make a copy and then edit the ddclient defaults
+sudo cp /etc/default/ddclient{,.original}
+sudo vim /etc/default/ddclient
+```
+
+```
+# /etc/default/ddclient
+# Comment out all lines except for these two:
+run_daemon="true"
+daemon_interval="300"
+```
+
+```bash
+# Make sure that the ddclient service is running
+sudo systemctl start ddclient
+# Test our ddclient configuration with the following command:
+sudo ddclient -daemon=0 -debug -verbose -noquiet
+```
+
+You should receive the following message:
+
+```
+SUCCESS:  engineerworkshop.com: skipped: IP address was already set
+Going back to Google Domains and looking at your Dynamic DNS record should also show your public IP address.
 ```
