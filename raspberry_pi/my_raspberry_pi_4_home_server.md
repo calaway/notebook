@@ -178,6 +178,14 @@ sudo cp -v /var/snap/nextcloud/common/nextcloud/data /mnt/calaway_2tb/nextcloud
 sudo snap enable nextcloud
 ```
 
+#### HTTPS via Let's Encrypt
+
+```bash
+# Run this script and follow the prompts
+# (Reminder: I used email address e********2@gmail.com)
+sudo nextcloud.enable-https lets-encrypt
+```
+
 ## Tooling
 
 ### Oh My Zsh
@@ -200,23 +208,3 @@ Customizations:
 * [Autosuggestions](https://github.com/zsh-users/zsh-autosuggestions/blob/master/INSTALL.md#oh-my-zsh)
 * [Syntax highlighting](https://github.com/zsh-users/zsh-syntax-highlighting/blob/master/INSTALL.md#oh-my-zsh)
 * [fasd](https://github.com/clvv/fasd/wiki/Installing-via-Package-Managers)
-
-.
-
-.
-
-.
-
-.
-
-.
-
-.
-
-.
-
-.
-
-.
-
-.
