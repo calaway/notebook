@@ -37,10 +37,13 @@ sudo apt-get upgrade
 
 ### Backing Up
 
-On Windows you can again us Win32DiskImager as we did on install.
+On Windows you can again use Win32DiskImager, as we did on install.
 
-On Mac/Linux it is similar to the install command, but in reverse.
+On Mac/Linux it is similar to the install command, but in reverse. Remove the SD card from the Pi and insert it into the computer you're backing it up to.
 ```bash
+# Find the correct device
+diskutil list
+# Make a bit-for-bit copy
 sudo dd if=/dev/diskn of=~/pi.img bs=1m
 ```
 

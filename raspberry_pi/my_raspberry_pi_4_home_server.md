@@ -208,3 +208,20 @@ Customizations:
 * [Autosuggestions](https://github.com/zsh-users/zsh-autosuggestions/blob/master/INSTALL.md#oh-my-zsh)
 * [Syntax highlighting](https://github.com/zsh-users/zsh-syntax-highlighting/blob/master/INSTALL.md#oh-my-zsh)
 * [fasd](https://github.com/clvv/fasd/wiki/Installing-via-Package-Managers)
+
+## Backup SD Card
+
+I followed a mix of these instructions from [my PluralSight notes](./pluralsight_home_server_course_notes.md#backing-up) and [this article](https://www.linux.com/topic/desktop/full-metal-backup-using-dd-command/).
+
+Power down the Pi.
+```bash
+sudo shutdown -h now
+```
+
+Remove the SD card and insert it into the machine you're backing it up to.
+```bash
+# Find the correct device
+diskutil list
+# Make a bit-for-bit copy and compress it
+sudo dd if=/dev/diskx bs=1m conv=noerror,sync | gzip -c  > ~/Documents/backups/pi_2020-07-31.img.gz
+```
