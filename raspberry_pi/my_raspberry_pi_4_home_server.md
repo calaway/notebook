@@ -14,6 +14,40 @@ I used SSH to connect to the Pi remotely. Note that the router configuration in 
     - Support Domain Name: `Disable` (not sure what this does, so I left it on the default)
 1. To SSH into the Pi, run `ssh ubuntu@rphs`.
 
+### RSA Authentication
+
+To require asymetric key authentication, I followed a combination of instructions from [my PluralSight notes](./pluralsight_home_server_course_notes.md#remote-duplicati) and this [PiMyLifeUp article](https://pimylifeup.com/raspberry-pi-ssh-keys/).
+
+To generate a key pair, I recommend following the [instructions on GitHub](https://help.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh).
+
+Copy the public key from my MacBook.
+```bash
+pbcopy < ~/.ssh/id_rsa.pub
+```
+
+Save the public key on the Pi.
+```bash
+# Backup the original
+cp ~/.ssh/authorized_keys{,.original}
+# Edit the config, paste in the key at the end of the file, and save
+vim ~/.ssh/authorized_keys
+```
+
+Exit your `ssh` session and start a new one. Verify you can connect without a password. **Do not proceed if this does not work, or you will lock yourself out of the Pi.** (You would at least be able to log in via by connecting a monitor and keyboard to the Pi directly.)
+
+Disable password logins.
+```bash
+# Make a copy of the sshd config
+sudo cp /etc/ssh/sshd_config{,.original}
+# Edit the config
+sudo vim /etc/ssh/sshd_config
+```
+
+Uncomment and edit the PasswordAuthentication line to be
+```
+PasswordAuthentication no
+```
+
 ## Upgrade all Packages
 
 To upgrade all packages, run the following.
