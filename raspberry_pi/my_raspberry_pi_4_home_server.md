@@ -7,6 +7,9 @@ I installed Ubuntu 20.04 LTS (64-bit) from [here](https://ubuntu.com/download/ra
 I used SSH to connect to the Pi remotely. Note that the router configuration in these instructions was done on my CenturyLink Zyxel C3000Z, but with any luck the same steps can be translated to other routers.
 
 1. Log into the router at http://192.168.0.1. Navigate to `Modem Status >> Device Table`. Find the Pi's MAC address that began with `DC:A6:32` (for a Raspberry Pi 4).
+    - Alternatively, you can find the IP address by following the `nmap` instructions [here](https://www.raspberrypi.org/documentation/remote-access/ip-address.md):
+    - `brew install nmap`
+    - `sudo nmap -sn 192.168.0.0/24`
 1. To assign a static IP address within the local network, navigate to `Advanced Setup >> DHCP Reservation`, under `4. Select MAC Address` select the MAC address or past it in manually, then select the desired IP address and click `Apply`. I assigned it to `192.168.0.3`.
 1. To give the Pi a human readable name on the local network, navigate to `Advanced Setup >> DNS Host Mapping`. I set this up with:
     - DNS Host Name: `rphs` (**R**aspberry **P**i **H**ome **S**erver)
@@ -28,7 +31,7 @@ pbcopy < ~/.ssh/id_rsa.pub
 Save the public key on the Pi.
 ```bash
 # Backup the original
-cp ~/.ssh/authorized_keys{,.original}
+cp -v ~/.ssh/authorized_keys{,.original}
 # Edit the config, paste in the key at the end of the file, and save
 vim ~/.ssh/authorized_keys
 ```
@@ -38,9 +41,11 @@ Exit your `ssh` session and start a new one. Verify you can connect without a pa
 Disable password logins.
 ```bash
 # Make a copy of the sshd config
-sudo cp /etc/ssh/sshd_config{,.original}
+sudo cp -v /etc/ssh/sshd_config{,.original}
 # Edit the config
 sudo vim /etc/ssh/sshd_config
+# Restart the SSH daemon to pick up the config change
+sudo service sshd restart
 ```
 
 Uncomment and edit the PasswordAuthentication line to be
@@ -112,7 +117,7 @@ I followed [this tutorial](https://engineerworkshop.com/blog/connecting-your-ras
 # Install ddclient and go through the setup wizard
 sudo apt install ddclient
 # Make a copy of the original ddclient config file
-sudo cp /etc/ddclient.conf{,.original}
+sudo cp -v /etc/ddclient.conf{,.original}
 # Edit the ddclient config
 sudo vim /etc/ddclient.conf
 ```
@@ -132,7 +137,7 @@ pi.my-site.com
 
 ```bash
 # Make a copy and then edit the ddclient defaults
-sudo cp /etc/default/ddclient{,.original}
+sudo cp -v /etc/default/ddclient{,.original}
 sudo vim /etc/default/ddclient
 ```
 
@@ -192,7 +197,7 @@ sudo snap connect nextcloud:removable-media
 # Verify the connection was added
 snap connections nextcloud
 # Make a copy and then edit the Nextcloud config
-sudo cp /var/snap/nextcloud/current/nextcloud/config/config.php{,.original}
+sudo cp -v /var/snap/nextcloud/current/nextcloud/config/config.php{,.original}
 sudo vim /var/snap/nextcloud/current/nextcloud/config/config.php
 ```
 
