@@ -53,8 +53,9 @@ Uncomment and edit the PasswordAuthentication line to be
 PasswordAuthentication no
 ```
 
-## Upgrade all Packages
+## Upgrading Packages
 
+### Manual
 To upgrade all packages, run the following.
 ```bash
 sudo apt update && sudo apt upgrade --yes
@@ -63,6 +64,16 @@ sudo apt update && sudo apt upgrade --yes
 The `update` will fetch the most recent version lists. Then `upgrade` will actually install them. The `--yes` flag will automatically accept the annoying prompt that asks you to confirm after the amount of space is calculated.
 
 Note that `apt` is a newer, more user friendly alternative to `apt-get`.
+
+### Automatic
+Follow [these instructions](https://help.ubuntu.com/community/AutomaticSecurityUpdates#Using_the_.22unattended-upgrades.22_package) to enable automatic upgrades.
+```bash
+# Install the thing
+sudo apt-get install unattended-upgrades
+
+# Enable the thing
+sudo dpkg-reconfigure --priority=low unattended-upgrades
+```
 
 ## FSTAB: Mounting an External Hard Drive
 
