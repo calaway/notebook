@@ -548,6 +548,626 @@ spec:
 ...
 ```
 
+### Taints and Tolerations
+
+One or more taints can be applied to a node to repel pods from being scheduled on it. One or more tolerations can be applied to a pod, to allow it (but do not require it) to be scheduled on a node with a matching taint. This can be used to "reserve" a node for specific types of pods.
+
+Taints are specified by a key value pair. Tainte effect options are:
+1. `NoSchedule`: No new intolerant pods will be scheduled on the node.
+1. `PreferNoSchedule`: Don't schedule new intolerant pods, unless there's no room elsewhere. This is a "soft" version of `NoSchedule`.
+1. `NoExecute`: No new intolerant pods will be scheduled on the node, and existing intolerant pods will be evicted from the node.
+```sh
+kubectl taint nodes <node-name> <key>=<value>:<taint-effect>
+# Add a taint to a node
+kubectl taint nodes node1 app=blue:NoShedule
+# See the taint on a node
+kubectl describe node node1 | grep -i taint
+# Remove a taint from a node
+kubectl taint nodes node1 app-
+```
+
+To apply a toleration to a pod:
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+  tolerations:
+    # Note that values must be in double quotes
+    - key: "app"
+      operator: "Equal" # Case sensitive
+      value: "blue"
+      effect: "NoSchedule"
+```
+If you forget the keys required, try
+```sh
+kubectl explain pods --recursive | less
+kubectl explain pods --recursive | grep -A 5 toleration
+```
+
+### Node Selectors
+
+You can specify which nodes a pod will run on by labeling a node and matching it in the pod definition.
+```sh
+kubectl label node <node-name> <label-key>=<label-value>
+kubectl label node node-1 size=Large
+```
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: data-processor
+spec:
+  containers:
+    - name: data-processor
+      image: data-processor
+  nodeSelector:
+    size: Large
+```
+Node selectors are useful, but limited. For example, there is no way to specify that you want your pod to be scheduled on either a Large or Medium node; or not on a Small node.
+
+### Node Affinity
+
+Node affinity allows for more complex expressions, such as `or` and `not`, but is also more complex to designate. This will do the same thing as the simple node selector above.
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: data-processor
+spec:
+  containers:
+    - name: data-processor
+      image: data-processor
+  affinity:
+   nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: size
+                operator: In
+                values:
+                  - Large
+```
+For Large or Medium
+```yaml
+          - matchExpressions:
+              - key: size
+                operator: In
+                values:
+                  - Large
+                  - Medium
+```
+For anything but Small
+```yaml
+          - matchExpressions:
+              - key: size
+                operator: NotIn
+                values:
+                  - Small
+```
+For any node that has any value for `size`
+```yaml
+          - matchExpressions:
+              - key: size
+                operator: Exists
+```
+
+Affinity types:
+1. preferredDuringSchedulingIgnoredDuringExecution
+    - Can be scheduled on a node it does not have an affinity for if necessary
+    - Will not be evicted if the affinity changes after scheduling
+1. requiredDuringSchedulingIgnoredDuringExecution
+    - Will not be scheduled if no node exists with a matching affinity
+    - Will not be evicted if the affinity changes after scheduling
+1. requiredDuringSchedulingRequiredDuringExecution
+    - Will not be scheduled if no node exists with a matching affinity
+    - Will be evicted if the affinity changes after scheduling
+
+### Taints & Tolerations vs Node Affinity
+
+These two concepts can be combined to give you more control over scheduling. For example, say you have blue, red, and green pods, that you want scheduled on your blue, red, and green nodes. You also want to ensure other pods are not scheduled on these. Give them an affinity for their color to get them scheduled there, then give the nodes taints for their colors to keep others away, then give the three tolerations for their colors so the taints don't keep them away.
+
+## Multi-Container Pods
+
+### Multi-Container Pods
+
+Kubernetes makes running microservices easier, since each service can be managed as its own pod. However, sometimes you may want multiple tightly coupled services to be run together in a pod, such as a web server and a log agent. Multi-container pods share the same lifecycle, so they are scaled up and down together. They also share the same network space, so they can refer to each other as localhost, and they have access to the same storage volumes.
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: simple-webapp
+spec:
+  containers:
+    - name: simple-webapp
+      image: simple-webapp
+      ports:
+        - containerPort: 8080
+    - name: log-agent
+      image: log-agent
+```
+
+There are three common patterns for companion containers to the main service in a pod, sidecar, adapter, and ambassador.
+
+A sidecar would be like the example above, of a log server that collects logs and reports them to a central log server.
+
+An adapter example might be a log adapter, which takes in logs from different microservices in various formats and adapts them to the same format before passing them along to the log server.
+
+An ambassador example could be a container that takes any request to a database on localhost and routes it to the correct database for that environment, i.e. dev, test, or prod.
+
+## Observability
+
+### Readiness and Liveness Probes
+
+Pod lifecyle:
+1. Pending: Pod has not been scheduled
+1. ContainerCreating: Pod has been scheduled, but is not yet running
+1. Running: Pod is succesfully running and will stay in this state until the program completes or is terminated
+
+A problem may occur when Kubernetes has successfully started your container and starts routing traffic to it, but the container is still initializing and is not ready to accept traffic. This can be solved with a readiness probe. If a readiness probe is set, k8s will not route traffic to the pod until it has received a successful response from the test.
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: simple-webapp
+spec:
+  containers:
+    - name: simple-webapp
+      image: simple-webapp
+      readinessProbe:
+        httpGet:
+          path: /api/ready
+          port: 8080
+```
+
+There are different types of readiness tests:
+
+HTTP Test:
+```yaml
+      readinessProbe:
+        httpGet:
+          path: /api/ready
+          port: 8080
+```
+
+TCP Test:
+```yaml
+      readinessProbe:
+        tcpSocket:
+          port: 3306
+```
+
+Exec Command:
+```yaml
+      readinessProbe:
+        exec:
+          command:
+            - cat
+            - /app/is_ready
+```
+
+See additional options with `kubectl explain pods.spec.containers.readinessProbe`, such as:
+```yaml
+      readinessProbe:
+        httpGet:
+          path: /api/ready
+          port: 8080
+        initialDelaySeconds: 10 # Wait a bit longer before ready - default 0
+        periodSeconds: 5 # Interval between probes - default 1
+        failureThreshold: 8 # Minimum consecutive failures before container is considered failed - default 3
+```
+
+
+### Liveness Probes
+
+A liveness probe is similar to a readiness probe, except whereas a rediness probe is only tested when the container is initially launched, a liveness probe runs the test continuously to monitor the health of the container. If it receives a failed response then it will terminate the container so it can be recreated.
+
+HTTP Test:
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: simple-webapp
+spec:
+  containers:
+    - name: simple-webapp
+      image: simple-webapp
+      livenessProbe:
+        httpGet:
+          path: /api/ready
+          port: 8080
+```
+
+TCP Test:
+```yaml
+      livenessProbe:
+        tcpSocket:
+          port: 3306
+```
+
+Exec Command:
+```yaml
+      livenessProbe:
+        exec:
+          command:
+            - cat
+            - /app/is_ready
+```
+
+See additional options with `kubectl explain pods.spec.containers.livenessProbe`. See example under readiness probes.
+
+### Container Logging
+
+To view logs in Docker, use the `docker logs` command.
+```bash
+$ docker run -d kodekloud/event-simulator
+d0255a5968d2697ebae018f81b506f815fc0c10ad89d1e7f5fc68d54685d3fac
+
+$ docker logs --follow d0255
+```
+
+To view logs in Kubernetes, use the `kubectl logs` command.
+```
+kubectl run event-simulator --image=kodekloud/event-simulator
+kubectl logs --follow event-simulator
+```
+
+If there are multiple containers in the pod, specify which at the end of the command.
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: event-simulator-pod
+spec:
+  containers:
+    - name: event-simulator
+      image: kodekloud/event-simulator
+    - name: nginx
+      image: nginx
+```
+```
+kubectl logs --follow event-simulator-pod event-simulator
+```
+
+### Monitor and Debug Applications
+
+Kubernetes does not come with a metrics server built in, but there are multiple open source ones available. In this example we'll look at [Kubernetes Metrics Server](https://github.com/kubernetes-sigs/metrics-server).
+
+```sh
+# To start metrics server on Minikube
+minikube addons enable metrics-server
+# Without Minikube
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+# See node performance metrics
+kubectl top node
+# See pod performance metrics
+kubectl top pod
+```
+
+### Labels, Selectors, and Annotations
+
+Labels are used to put an object into one or more groups. Selectors are used to identify objects or groups of objects by their labels.
+
+Add labels under `metadata`.
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: simple-webapp
+  labels:
+    app: App1
+    function: Front-end
+spec:
+  containers:
+    - name: simple-webapp
+      image: simple-webapp
+```
+
+Get objects using selectors via kubectl
+```sh
+# --selector and -l are synonymous
+kubectl get pods --selector app=App1
+kubectl get pods -l app=App1
+# Show all pods with their labels
+kubectl get pods --show-labels
+```
+
+In this example, the `App1` label is used by the deployment to select the pod that it is creating. Multiple selectors could be used if one is not specific enough.
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-webapp
+  labels:
+    app: App1
+    function: Front-end
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: App1
+  template:
+    metadata:
+      name: simple-webapp
+      labels:
+        app: App1
+        function: Front-end
+    spec:
+      containers:
+        - name: simple-webapp
+          image: simple-webapp
+```
+
+Annotations can be used to add any additional arbitrary data, usually for the purpose of integrating with some other system.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-webapp
+  annotiations:
+    buildversion: 1.34
+spec:
+  ...
+```
+
+### Rolling Updates & Rollbacks in Deployments
+
+Rollout history is kept so you can roll back to a previous working version if necessary.
+
+```sh
+# Get the status of a rollout in progress
+kubectl rollout status deployment/myapp-deployment
+# Show all previous rollouts
+kubectl rollout history deployment/myapp-deployment
+```
+
+There are two types of rollout strategies:
+1. Recreate: destroy all pods and then recreate them all
+1. Rolling update: Take down each pod only after it has been successfully replaced
+
+The former causes downtime, so the latter is the default.
+
+Typically a new rollout is triggered by applying a new deployment.
+```sh
+kubectl apply -f deployment-definition.yml
+```
+
+However, you can also set an image in an existing deployment. This has the downside of running an image that does not match what is defined in the deployment.
+```sh
+kubectl set image deployment/myapp-deployment nginx=nginx:1.9.1
+```
+
+Rollout history is maintained by not deleting old replicasets. When you roll back it will revert to the previous replicaset.
+
+Command recap:
+```sh
+# Apply a deployment manifest
+kubectl create -f deployment-definition.yml
+# Show deployments
+kubectl get deployments
+# Apply a deployment manifest
+kubectl apply -f deployment-definition.yml
+# Set an image on a running deployment
+kubectl set image deployment/myapp-deployment nginx=nginx:1.9.1
+# Get the status of a rollout in progress
+kubectl rollout status deployment/myapp-deployment
+# Show all previous rollouts
+kubectl rollout history deployment/myapp-deployment
+# Roll back to the previous deployment
+kubectl rollout undo deployment/myapp-deployment
+```
+
+### Jobs
+
+Whereas the purpose of a replicaset is to keep a given number of pods running at all times, a job is meant to run a certain task to completion.
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: math-add-job
+spec:
+  template:
+    spec:
+      containers:
+        - name: math-add
+          image: ubuntu
+          command: ['expr', '3', '+', '2']
+      restartPolicy: Never
+```
+
+Additional options:
+```yaml
+spec:
+  # Continue creating new pods until three exit succesfully
+  completions: 3
+  # Run up to two of these concurrently
+  parallelism: 2
+```
+
+### CronJobs
+
+It does exactly what you would expect it to.
+
+```yaml
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: reporting-cron-job
+spec:
+  schedule: "*/1 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: math-add
+              image: ubuntu
+              command: ['expr', '3', '+', '2']
+          restartPolicy: Never
+```
+
+## Services & Networking
+
+### Services
+
+Services allow communication to and from pods. Without this you would only be able to commuticate with the pod by SSHing into the node, which isn't very useful.
+
+See notes in Kubernetes for Beginners [here](./udemy--kubernetes-for-beginners.md#services).
+
+### Ingress Networking
+
+Ingress exposes HTTP routes from outside the cluster to services within the cluster. Ingress may provide load balancing, SSL termination and name-based virtual hosting.
+
+```yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nginx-ingress-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: nginx-ingress
+  template:
+    metadata:
+      labels:
+        name: nginx-ingress
+    spec:
+      containers:
+        - name: nginx-ingress-controller
+          image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.21.0
+      args:
+        - /nginx-ingress-controller
+        - --configmap=$(POD_NAMESPACE)/nginx-configuration
+      env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+      ports:
+        - name: http
+          containerPort: 80
+        - name: https
+          containerPort: 443
+---
+
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: nginx-configuration
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-ingress
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
+    - port: 443
+      targetPort: 443
+      protocol: TCP
+      name: https
+    selector:
+      name: nginx-ingress
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nginx-ingress-serviceaccount
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Ingres
+metadata:
+  name: ingress-wear
+spec:
+  backend:
+    serviceName: wear-service
+    servicePort: 80 
+```
+
+Traffic can be routed according to different rules, such as:
+- `www.my-online-store.com`
+    - `www.my-online-store.com/`
+    - `www.my-online-store.com/watch`
+    - `www.my-online-store.com/listen`
+- `www.wear.my-online-store.com`
+    - `www.wear.my-online-store.com/`
+    - `www.wear.my-online-store.com/returns`
+    - `www.wear.my-online-store.com/support`
+- `www.wear.my-online-store.com`
+    - `www.wear.my-online-store.com/`
+    - `www.wear.my-online-store.com/movies`
+    - `www.wear.my-online-store.com/tv`
+- `Everything else`
+    - `www.listen.my-online-store.com/`
+    - `www.eat.my-online-store.com/`
+    - `www.drink.my-online-store.com/tv`
+
+Ingress with rule to route different paths to different services:
+```yaml
+apiVersion: extensions/v1beta1
+kind: Ingres
+metadata:
+  name: ingress-wear-watch
+spec:
+  rules:
+    - http:
+      paths:
+        - path: /wear
+          backend:
+            serviceName: wear-service
+            servicePort: 80 
+        - path: /watch
+          backend:
+            serviceName: watch-service
+            servicePort: 80 
+```
+
+Ingress with rule to route different sub-domains to different services:
+```yaml
+apiVersion: extensions/v1beta1
+kind: Ingres
+metadata:
+  name: ingress-wear-watch
+spec:
+  rules:
+    - host: wear.my-online-store.com
+      http:
+        paths:
+          - backend:
+              serviceName: wear-service
+              servicePort: 80 
+    - host: watch.my-online-store.com
+      http:
+        paths:
+          - backend:
+              serviceName: watch-service
+              servicePort: 80 
+```
+
+
 .
 
 .
