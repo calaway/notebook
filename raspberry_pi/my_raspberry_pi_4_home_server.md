@@ -180,10 +180,13 @@ I opted to install [Nextcloud via snap](https://snapcraft.io/install/nextcloud/u
 #### Install
 
 ```bash
+# Install via snap
 sudo snap install nextcloud
+
+# Manually set the login credentials
+sudo nextcloud.manual-install <username> <password>
 ```
 
-After the installation is finished, navigate to the server via LAN at http://rphs. It will prompt you to set admin credentials.
 
 #### Set Trusted Domains
 
@@ -205,8 +208,17 @@ Follow the [wiki article](https://github.com/nextcloud/nextcloud-snap/wiki/Chang
 ```bash
 # Give the snap permission to access removable media by connecting that interface
 sudo snap connect nextcloud:removable-media
+
 # Verify the connection was added
 snap connections nextcloud
+
+# Create the directory and set owner & permissions
+sudo mkdir -p /mnt/calaway_2tb/nextcloud/data
+sudo chown -R root:root /mnt/calaway_2tb/nextcloud/data
+
+# Stop the snap from running for a moment
+ $ sudo snap stop nextcloud
+
 # Make a copy and then edit the Nextcloud config
 sudo cp -v /var/snap/nextcloud/current/nextcloud/config/config.php{,.original}
 sudo vim /var/snap/nextcloud/current/nextcloud/config/config.php
@@ -220,12 +232,11 @@ sudo vim /var/snap/nextcloud/current/nextcloud/config/config.php
 ```
 
 ```bash
-# Stop the snap from running for a moment
-sudo snap disable nextcloud
 # Copy the current data directory to the new place
-sudo cp -v /var/snap/nextcloud/common/nextcloud/data /mnt/calaway_2tb/nextcloud
+sudo cp -rv /var/snap/nextcloud/common/nextcloud/data /mnt/calaway_2tb/nextcloud
+
 # Re-enable the snap:
-sudo snap enable nextcloud
+sudo snap start nextcloud
 ```
 
 #### HTTPS via Let's Encrypt
