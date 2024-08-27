@@ -199,7 +199,74 @@ ls /mnt/calaway_1tb
 # Since my drive was newly formatted, for me this only listed `lost+found`
 ```
 
-## Port Forwarding
+## Networking
+
+### Create a VLAN
+
+I created a VLAN for public facing servers on my home network via my UniFi router.
+1. Create the VLAN
+    1. On the UniFi dashboard, navigate to Network >> Settings >> Networks >> New Virtual Network
+    1. Name the new VLAN `Public Servers`
+    1. Leave all other settings on defaults
+1. Create a WiFi network
+    1. Navigate to Network >> Settings >> WiFi >> Create New
+    1. Name it `Iridium Public Servers` and assign a password
+    1. Select the `Public Servers` network
+    1. Under Advanced >> Manual, check Hide WiFi Name
+    1. Leave all other settings on defaults
+
+### Connect to the New WiFi Network
+
+Network configuration on Ubuntu is handled through Netplan (see docs [here](https://documentation.ubuntu.com/server/explanation/networking/about-netplan/)).
+
+```bash
+# Check your current local IP and find the network interfaces
+ip addr
+# => 2: eth0: ...
+# => inet 192.168.1.x/24 ...
+# => 3: wlan0: ...
+
+# Create a new config with a higher number to take precedence over the original 50-cloud-init.yaml
+sudo touch /etc/netplan/51-my-config.yaml
+sudo chmod g-r,o-r /etc/netplan/51-my-config.yaml
+sudo vim /etc/netplan/51-my-config.yaml
+```
+
+```yaml
+# /etc/netplan/51-my-config.yaml
+network:
+  version: 2
+  renderer: networkd # networkd is the default renderer for Ubuntu server
+  ethernets:
+    eth0: # Ethernet network interface name from `ip addr` output above
+      optional: true # Will not wait on startup if connection is not found
+      dhcp4: true
+  wifis:
+    wlan0: # Wireless network interface name from `ip addr` output above
+      optional: true
+      dhcp4: true
+      access-points:
+        "Iridium Public Servers":
+          hidden: true # Only needed if the network is hidden
+          password: <wifi_password>
+```
+
+```bash
+# Check the plan
+sudo netplan get
+# Try applying the config for 120 seconds
+sudo netplan try
+# Apply the config
+sudo netplan --debug apply
+
+# Verify that you're now on a 192.168.2.x address
+ip addr
+# => inet 192.168.2.x/24 ...
+```
+
+### Port Forwarding
+
+### 2020 Original
 
 Find the local IP address either by looking it up on your router's device table or by running `ifconfig | grep inet`.
 
