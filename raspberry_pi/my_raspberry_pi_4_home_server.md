@@ -337,18 +337,18 @@ Going back to Google Domains and looking at your Dynamic DNS record should also 
 
 I opted to install [Nextcloud via snap](https://snapcraft.io/install/nextcloud/ubuntu), and found [this article from Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-nextcloud-on-ubuntu-20-04) to be quite useful.
 
-#### Install
+### Install
 
 ```bash
 # Install via snap
 sudo snap install nextcloud
 
-# Manually set the login credentials
+# Optionally manually set the login credentials
 sudo nextcloud.manual-install <username> <password>
 ```
 
 
-#### Set Trusted Domains
+### Set Trusted Domains
 
 ```bash
 # View all current trusted domains
@@ -361,7 +361,7 @@ sudo nextcloud.occ config:system:set trusted_domains 2 --value=pi.my-site.com
 sudo nextcloud.occ config:system:get trusted_domains
 ```
 
-#### External Hard Drive
+### External Hard Drive
 
 Follow the [wiki article](https://github.com/nextcloud/nextcloud-snap/wiki/Change-data-directory-to-use-another-disk-partition) to change data directory to use another disk partition. This [Stack answer](https://askubuntu.com/a/882696) was also helpful.
 
@@ -373,11 +373,11 @@ sudo snap connect nextcloud:removable-media
 snap connections nextcloud
 
 # Create the directory and set owner & permissions
-sudo mkdir -p /mnt/calaway_2tb/nextcloud/data
-sudo chown -R root:root /mnt/calaway_2tb/nextcloud/data
+sudo mkdir -p /mnt/calaway_1tb/nextcloud/data
+sudo chown -R root:root /mnt/calaway_1tb/nextcloud/data
 
 # Stop the snap from running for a moment
- $ sudo snap stop nextcloud
+sudo snap stop nextcloud
 
 # Make a copy and then edit the Nextcloud config
 sudo cp -v /var/snap/nextcloud/current/nextcloud/config/config.php{,.original}
@@ -388,18 +388,18 @@ sudo vim /var/snap/nextcloud/current/nextcloud/config/config.php
 # Change
 'datadirectory' => '/var/snap/nextcloud/common/nextcloud/data'
 # to the desired directory
-'datadirectory' => '/mnt/calaway_2tb/nextcloud/data'
+'datadirectory' => '/mnt/calaway_1tb/nextcloud/data'
 ```
 
 ```bash
 # Copy the current data directory to the new place
-sudo cp -rv /var/snap/nextcloud/common/nextcloud/data /mnt/calaway_2tb/nextcloud
+sudo cp -rv /var/snap/nextcloud/common/nextcloud/data /mnt/calaway_1tb/nextcloud
 
 # Re-enable the snap:
 sudo snap start nextcloud
 ```
 
-#### HTTPS via Let's Encrypt
+### HTTPS via Let's Encrypt
 
 ```bash
 # Run this script and follow the prompts
