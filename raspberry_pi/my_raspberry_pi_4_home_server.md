@@ -1,5 +1,11 @@
 ## Install Ubuntu Server
 
+### 2024 Update
+
+I followed [these instructions](https://ubuntu.com/download/raspberry-pi) to install Ubuntu server 24.04 LTS via the Raspberry Pi Imager. Leverage the custom config settings on the Raspberry Pi Imager to automatically connect to your wi-fi and have your SSH key installed. I was able to SSH into the pi immediately after booting it up the first time without ever connecting to a monitor.
+
+### 2020 Original
+
 I installed Ubuntu 20.04 LTS (64-bit) from [here](https://ubuntu.com/download/raspberry-pi) using [these instructions](https://ubuntu.com/tutorials/how-to-install-ubuntu-on-your-raspberry-pi#1-overview). I did this entirely headlessly, without ever connecting the Pi to a monitor or keyboard. I plugged it directly into the router via ethernet, so there was no need to mess with wi-fi.
 
 ## SSH
