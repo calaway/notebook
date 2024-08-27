@@ -51,7 +51,10 @@ This is a bit-for-bit copy, which means a lot of it is wasted space. Compress it
 
 Shutdown command:
 ```bash
-sudo shutdown -h now # -h for "hard"
+# Halt all processes, but do not power down the machine
+sudo shutdown -h now
+# Alternatively, halt all processes and power down the machine
+sudo shutdown -P now
 ```
 
 ## Going Headless
@@ -749,8 +752,6 @@ sudo e2fsck -f /dev/sda1
 sudo resizefs /dev/sda1
 # Find the partition GUID and copy it
 sudo gdisk /dev/sda
-i
-1
 # Update the cmdline.txt
 sudo nano /boot/cmdline.txt
 ```
