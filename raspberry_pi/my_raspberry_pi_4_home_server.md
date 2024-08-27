@@ -98,6 +98,22 @@ Add the following line to automatically reboot when necessary:
 Unattended-Upgrade::Automatic-Reboot "true";
 ```
 
+### Upgrade Ubuntu Release
+
+Documentation from Ubuntu can be found [here](https://ubuntu.com/server/docs/how-to-upgrade-your-release).
+
+Pre-upgrade checklist:
+
+1. Upgrade all packages (see above)
+1. Verify that you have at least a few gigabytes of free disk space via `df -h`
+1. Backup all data (see below)
+1. Open backup port: `iptables -I INPUT -p tcp --dport 1022 -j ACCEPT`
+
+```bash
+# Do the thing
+sudo do-release-upgrade
+```
+
 ## FSTAB: Mounting an External Hard Drive
 
 I followed [these instructions](./pluralsight_home_server_course_notes.md#adding-external-storage) to add automatically mount my HDD via the file system table (fstab) config. I skipped the instructions for formatting the HDD, and instead opted to do it via the GParted GUI on an Ubuntu live USB on my MacBook. [This guide](https://help.ubuntu.com/community/Fstab) from Ubuntu was also useful.
