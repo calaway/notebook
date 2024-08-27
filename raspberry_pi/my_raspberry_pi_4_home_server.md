@@ -114,34 +114,88 @@ Pre-upgrade checklist:
 sudo do-release-upgrade
 ```
 
-## FSTAB: Mounting an External Hard Drive
+## External Hard Drive
 
-I followed [these instructions](./pluralsight_home_server_course_notes.md#adding-external-storage) to add automatically mount my HDD via the file system table (fstab) config. I skipped the instructions for formatting the HDD, and instead opted to do it via the GParted GUI on an Ubuntu live USB on my MacBook. [This guide](https://help.ubuntu.com/community/Fstab) from Ubuntu was also useful.
+I followed [these instructions](./pluralsight_home_server_course_notes.md#adding-external-storage) to add automatically mount my HDD via the file system table (fstab) config.
+
+You can skip the instructions for formatting the HDD, and instead opt to do it via the GParted GUI on an Ubuntu live USB ([this guide](https://help.ubuntu.com/community/Fstab) from Ubuntu was also useful), or use the following instructions to partition via CLI.
+
+### Partition the Device
+
+```bash
+# List block devices to find the location of the disk (e.g. sda1)
+lsblk
+
+# Open Parted
+$ sudo parted
+
+# Show all drives & partitions
+(parted) print all
+
+# Select the drive you want to partition
+(parted) select /dev/sda
+
+# Show just the selected drive
+(parted) print
+
+# Make a new partition table (guid partition table)
+(parted) mklabel gpt
+
+# Verify the new partition table exitsts
+(parted) print
+
+# Make a new partition comprising the full disk
+(parted) mkpart calaway_1tb ext4 0gb 100%
+
+# Verify everything looks correct
+(parted) print
+
+# Quit parted
+(parted) q
+```
+
+### Format the Partition
+
+```bash
+# Find the correct partition
+lsblk
+
+# Format the partition as ext4
+sudo mkfs.ext4 /dev/sda1
+```
+
+### Mount the Partition
 
 ```bash
 # create a mount point
 cd /mnt
-sudo mkdir calaway_2tb
+sudo mkdir calaway_1tb
+
 # Create a placeholder file to help see whether the mount point worked
 # If you can see this file with `ls` then it is not mounted
-sudo touch calaway_2tb/placeholder
+sudo touch calaway_1tb/placeholder
+
 # Find the UUID of the partition you wish to mount
 sudo blkid | grep UUID
-# Found `/dev/sda1: LABEL="calaway_2tb" UUID="ed6c1686-5997-424d-9a0e-fa6929a53431" TYPE="ext4" PARTUUID="572b7278-ab40-41df-b7a3-f2e0ea77e1a6"`
+# Found `/dev/sda1: LABEL="calaway_1tb" UUID="ed6c1686-5997-424d-9a0e-fa6929a53431" TYPE="ext4" PARTUUID="572b7278-ab40-41df-b7a3-f2e0ea77e1a6"`
+
+# Backup fstab
+sudo cp /etc/fstab{,.original}
+
 # Edit fstab
 sudo vim /etc/fstab
 ```
 
 I added the following line to the bottom of the fstab file.
 ```
-UUID=ed6c1686-5997-424d-9a0e-fa6929a53431 /mnt/calaway_2tb ext4 defaults 0 0
+UUID=ed6c1686-5997-424d-9a0e-fa6929a53431 /mnt/calaway_1tb ext4 defaults 0 0
 ```
 
 ```bash
 # Reboot
 sudo reboot
 # Verify the partition loaded automatically by making sure the placholder file is not shown
-ls /mnt/calaway_2tb
+ls /mnt/calaway_1tb
 # Since my drive was newly formatted, for me this only listed `lost+found`
 ```
 
