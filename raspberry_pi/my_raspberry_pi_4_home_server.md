@@ -10,6 +10,12 @@ I installed Ubuntu 20.04 LTS (64-bit) from [here](https://ubuntu.com/download/ra
 
 ## SSH
 
+### 2024 Update
+
+I found the Pi on my UniFi Dream Router under Network >> Client Devices and logged in via `ssh calaway@192.168.1.9`. The router also automatically applied the host name, so I was able to log in without looking up the local IP via `ssh calaway@rphs`.
+
+### 2020 Original
+
 I used SSH to connect to the Pi remotely. Note that the router configuration in these instructions was done on my CenturyLink Zyxel C3000Z, but with any luck the same steps can be translated to other routers.
 
 1. Log into the router at http://192.168.0.1. Navigate to `Modem Status >> Device Table`. Find the Pi's MAC address that began with `DC:A6:32` (for a Raspberry Pi 4).
