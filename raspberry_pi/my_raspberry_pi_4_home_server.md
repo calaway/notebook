@@ -266,19 +266,38 @@ ip addr
 
 ### Port Forwarding
 
-### 2020 Original
+My setup is a CenturyLink Zyxel C3000Z modem/router with the WiFi disabled only device plugged in via ethernet being a UniFi Dream Router.
 
-Find the local IP address either by looking it up on your router's device table or by running `ifconfig | grep inet`.
+To forward the https port from the CenturyLink router to the UniFi router:
+1. Reserve a fixed IP address for the UniFi router on the CenturyLink router:
+    1. Log into the CenturyLink router at http://192.168.0.1, navigate to `Modem Status >> Device Table`, and copy the MAC address for the UniFi router
+    1. Navigate to `Advanced Setup >> DHCP Reservation`
+      1. Select MAC Address: `Manually Enter MAC`
+      1. Manually Add MAC Address: `<mac_address_from_above>`
+      1. IP Address: `192.168.0.2`
+      1. Apply
+1. Forward the https port to the UniFi router:
+    1. Still on the CenturyLink router, navigate to `Advanced Setup >> Port Forwarding`
+    1. Select the UniFi router from the dropdown, or manually enter IP address
+    1. Select `TCP` for the protocol
+    1. Enter `443` for both the starting and ending ports
+    1. Select `All IP Addresses`
+    1. Apply
 
-Here's how I set up port forwarding on my CenturyLink Zyxel C3000Z, but with any luck the same steps can be translated to other routers.
-
-1. Log into the router at http://192.168.0.1. Navigate to `Advanced Setup >> Port Forwarding`.
-1. Section 1: Select the Pi from the dropdown, or manually enter IP address.
-1. Section 2: Enter `80` for both the starting and ending ports.
-1. Section 3: Select `TCP` for the protocol.
-1. Section 4: Select `All IP Addresses`.
-1. Section 5: Click `Apply`.
-1. Repeat for port `443`.
+To forward the https port from the UniFi router to the Pi:
+1. Reserve a fixed IP address for the Pi on the UniFi router:
+    1. Log into the UniFi router at https://192.168.1.1 and navigate to Network >> Client Devices
+    1. Find and click into the Pi device, go to settings and set Fixed IP Address to `192.168.2.6` (or whatever you want)
+1. Forward the https port to the Pi:
+    1. Navigate to Network >> Settings >> Security >> Port Forwarding
+    1. Name: `rphs`
+    1. Forward Rule: yes
+    1. From: `Any`
+    1. Port: `443`
+    1. Forward IP: fill in local IP assigned to the Pi
+    1. Forward Port: `443`
+    1. Protocol: `TCP`
+    1. Logging: yes
 
 ## Dynamic DNS
 
