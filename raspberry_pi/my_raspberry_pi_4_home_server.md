@@ -301,6 +301,71 @@ To forward the https port from the UniFi router to the Pi:
 
 ## Dynamic DNS
 
+### Cloudflare (2024 Update)
+
+When Google Domains died I moved to Cloudflare. To update my ddclient accordingly I used `ddclient --help` along with [these instructions](https://www.reddit.com/r/SelfHosting/comments/16wnu3s/ddclient_and_cloudflare_dynamic_dns/).
+
+```bash
+# Install ddclient and go through the setup wizard
+sudo apt update && sudo apt install ddclient -y
+# Validate you have version 3.10 or higher, which is required for Cloudflare tokens
+ddclient --help | grep 'ddclient version'
+```
+
+In the setup wizard:
+1. Provider: other, then `cloudflare`
+1. Username: `token` (literally just token)
+1. Password: Cloudflare API Token
+1. Select Web-based IP discovery service
+1. Enter your hostname: `pi.my-site.com`
+
+```bash
+# Make a copy of the original ddclient config file
+sudo cp -v /etc/ddclient.conf{,.original}
+# Edit the ddclient config
+sudo vim /etc/ddclient.conf
+```
+
+I modified my `/etc/ddclient.conf` file to:
+```conf
+# /etc/ddclient.conf
+
+# General config
+# Operate as a daemon, checking every 5 minutes
+daemon=5m
+# Do updates over encrypted SSL connection
+ssl=yes
+
+# Router
+# Obtain IP from an IP discovery page on the web
+use=web, web=ipify-ipv4
+
+# Protocol
+# Use the Cloudflare protocol
+protocol=cloudflare
+# The domain name
+zone=calaway.cc
+# API token
+login=token
+password='my_cloudflare_api_token'
+# Fully qualified domain name
+pi.calaway.cc
+```
+
+Troubleshooting ddclient:
+```bash
+# Run this after each change to run ddclient once in non-daemon mode
+sudo ddclient -daemon=0 -debug -verbose -noquiet
+# See ddclient daemon status and log tail
+sudo systemctl status ddclient
+# Get ddclient logs
+sudo journalctl -u ddclient --since "1 hour ago"
+# Curl your domain
+curl http://pi.calaway.cc -v
+```
+
+### Google Domains (2020 Original)
+
 I followed [this tutorial](https://engineerworkshop.com/blog/connecting-your-raspberry-pi-web-server-to-the-internet/) to set up DDNS.
 
 ```bash
