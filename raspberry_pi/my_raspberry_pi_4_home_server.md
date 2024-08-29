@@ -434,13 +434,36 @@ sudo nextcloud.manual-install <username> <password>
 
 ### Set Trusted Domains
 
+See instructions [here](https://github.com/nextcloud-snap/nextcloud-snap/wiki/Configure-config.php#setting-trusted-domains).
+
+Option 1: Config
+```bash
+# Make a copy of the Nextcloud config if you haven't already, then edit
+sudo cp -v /var/snap/nextcloud/current/nextcloud/config/config.php{,.original}
+sudo vim /var/snap/nextcloud/current/nextcloud/config/config.php
+```
+Set your trusted domains:
+```
+ 'trusted_domains' =>
+  array (
+    0 => 'rphs',
+    1 => 'pi.calaway.cc',
+  ),
+```
+```bash
+# Verify the updated list of trusted domains
+sudo nextcloud.occ config:system:get trusted_domains
+```
+
+Option 2: CLI
+
 ```bash
 # View all current trusted domains
 sudo nextcloud.occ config:system:get trusted_domains
 # Set a second trusted domain in index 1
-sudo nextcloud.occ config:system:set trusted_domains 1 --value=rphs
+sudo nextcloud.occ config:system:set trusted_domains 0 --value=rphs
 # Set a third trusted domain in index 2
-sudo nextcloud.occ config:system:set trusted_domains 2 --value=pi.my-site.com
+sudo nextcloud.occ config:system:set trusted_domains 1 --value=pi.my-site.com
 # Verify the updated list of trusted domains
 sudo nextcloud.occ config:system:get trusted_domains
 ```
@@ -463,7 +486,7 @@ sudo chown -R root:root /mnt/calaway_1tb/nextcloud/data
 # Stop the snap from running for a moment
 sudo snap stop nextcloud
 
-# Make a copy and then edit the Nextcloud config
+# Make a copy of the Nextcloud config if you haven't already, then edit
 sudo cp -v /var/snap/nextcloud/current/nextcloud/config/config.php{,.original}
 sudo vim /var/snap/nextcloud/current/nextcloud/config/config.php
 ```
