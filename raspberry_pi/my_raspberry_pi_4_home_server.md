@@ -483,13 +483,15 @@ sudo cp -rv /var/snap/nextcloud/common/nextcloud/data /mnt/calaway_1tb/nextcloud
 sudo snap start nextcloud
 ```
 
-### HTTPS via Let's Encrypt
+### TLS Certificates via Let's Encrypt
+
+See instructions [here](https://github.com/nextcloud-snap/nextcloud-snap/wiki/configure-Nextcloud-snap#https-encryption-with-lets-encrypt).
 
 ```bash
 # Run this script and follow the prompts
-# (Reminder: I used email address e********2@gmail.com)
 sudo nextcloud.enable-https lets-encrypt
 ```
+Note to self: I used email address `e********@gmail.com` in 2020 and `c********@gmail.com` in 2024.
 
 ## Backup and Restore SD Card
 ### Backup
