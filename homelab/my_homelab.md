@@ -31,6 +31,11 @@ I used SSH to connect to the Pi remotely. Note that the router configuration in 
 
 ### RSA Authentication
 
+### 2024 Update
+
+This was set up automatically for me by the Raspberry Pi Imager. When I booted up the Pi for the first time it already had my SSH public key installed and I was able to log in.
+
+### 2020 Original
 To require asymetric key authentication, I followed a combination of instructions from [my PluralSight notes](./pluralsight_home_server_course_notes.md#remote-duplicati) and this [PiMyLifeUp article](https://pimylifeup.com/raspberry-pi-ssh-keys/).
 
 To generate a key pair, I recommend following the [instructions on GitHub](https://help.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh).
@@ -506,15 +511,20 @@ sudo cp -rv /var/snap/nextcloud/common/nextcloud/data /mnt/calaway_1tb/nextcloud
 sudo snap start nextcloud
 ```
 
-### TLS Certificates via Let's Encrypt
+### Let's Encrypt Certificate and TLS Encryption
 
-See instructions [here](https://github.com/nextcloud-snap/nextcloud-snap/wiki/configure-Nextcloud-snap#https-encryption-with-lets-encrypt).
+A certificate can be obtained via Let's Encrypt from the Nextcloud snap. Instructions can be found [here](https://github.com/nextcloud-snap/nextcloud-snap/wiki/configure-Nextcloud-snap#https-encryption-with-lets-encrypt).
 
 ```bash
 # Run this script and follow the prompts
 sudo nextcloud.enable-https lets-encrypt
 ```
 Note to self: I used email address `e********@gmail.com` in 2020 and `c********@gmail.com` in 2024.
+
+However, this caused an infinite redirect loop when I turned on the Cloudflare proxy. To resolve this:
+1. Log into Cloudflare and navigate to the domain
+1. Go to SSL/TLS >> Overview >> Configure
+1. Select `Full (Strict)` and save
 
 ## Backup and Restore SD Card
 ### Backup
@@ -569,3 +579,12 @@ Customizations:
 * [Autosuggestions](https://github.com/zsh-users/zsh-autosuggestions/blob/master/INSTALL.md#oh-my-zsh)
 * [Syntax highlighting](https://github.com/zsh-users/zsh-syntax-highlighting/blob/master/INSTALL.md#oh-my-zsh)
 * [fasd](https://github.com/clvv/fasd/wiki/Installing-via-Package-Managers)
+* [fzf](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/fzf)
+
+## Security
+
+* Disable password login
+* Lock down ingress to only Cloudflare domains
+* Enable Cloudflare proxy
+* Nextcloud trusted domains
+* TLS encryption
