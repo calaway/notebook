@@ -526,6 +526,57 @@ However, this caused an infinite redirect loop when I turned on the Cloudflare p
 1. Go to SSL/TLS >> Overview >> Configure
 1. Select `Full (Strict)` and save
 
+### Backup Nextcloud Data
+
+We can use rsync to make a backup of the Nextcloud data directory, then update the backup on an ongoing basis. Find a useful rsync tutorial [here](https://www.digitalocean.com/community/tutorials/how-to-use-rsync-to-sync-local-and-remote-directories).
+
+Install a modern version of rsync on both ends.
+```bash
+# Pi
+sudo apt update
+sudo apt install rsync
+```
+
+```bash
+# MacBook
+brew install rsync
+```
+
+Put Nextcloud in maintenance mode.
+```bash
+# From Pi
+sudo nextcloud.occ maintenance:mode --on
+
+# Or from MacBook
+ssh calaway@rphs "sudo nextcloud.occ maintenance:mode --on"
+```
+
+Run rsync from MacBook (replace directories as necessary). Optionally run with `--dry-run` flag to validate.
+```bash
+rsync \
+  --archive \
+  --compress \
+  --hard-links \
+  --no-owner \
+  --no-group \
+  --progress \
+  --delete \
+  --log-file="$HOME/Backups/Nextcloud/backup_logs/rsync-$(date +%F).log" \
+  --rsh="ssh" \
+  --rsync-path="sudo rsync" \
+  "calaway@rphs:/mnt/calaway_1tb/nextcloud/data/" \
+  "$HOME/Backups/Nextcloud/data/"
+```
+
+Disable maintenance mode when finished.
+```bash
+# From Pi
+sudo nextcloud.occ maintenance:mode --off
+
+# Or from MacBook
+ssh calaway@rphs "sudo nextcloud.occ maintenance:mode --off"
+```
+
 ## Backup and Restore SD Card
 ### Backup
 
