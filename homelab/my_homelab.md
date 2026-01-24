@@ -110,6 +110,21 @@ cat /var/log/apt/history.log
 
 ### Upgrade Ubuntu Release
 
+Find the current Ubuntu version:
+```bash
+$ lsb_release -a
+
+No LSB modules are available.
+Distributor ID:	Ubuntu
+Description:	Ubuntu 24.04.3 LTS
+Release:	24.04
+Codename:	noble
+
+# Alternatives:
+$ cat /etc/os-release
+$ cat /etc/lsb-release
+```
+
 Documentation from Ubuntu can be found [here](https://ubuntu.com/server/docs/how-to-upgrade-your-release).
 
 Pre-upgrade checklist:
