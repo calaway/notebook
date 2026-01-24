@@ -103,6 +103,11 @@ Add the following line to automatically reboot when necessary:
 Unattended-Upgrade::Automatic-Reboot "true";
 ```
 
+Validate automatic upgrades by reviewing the logs:
+```bash
+cat /var/log/apt/history.log
+```
+
 ### Upgrade Ubuntu Release
 
 Documentation from Ubuntu can be found [here](https://ubuntu.com/server/docs/how-to-upgrade-your-release).
