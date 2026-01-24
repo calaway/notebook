@@ -36,7 +36,7 @@ I used SSH to connect to the Pi remotely. Note that the router configuration in 
 This was set up automatically for me by the Raspberry Pi Imager. When I booted up the Pi for the first time it already had my SSH public key installed and I was able to log in.
 
 ### 2020 Original
-To require asymetric key authentication, I followed a combination of instructions from [my PluralSight notes](./pluralsight_home_server_course_notes.md#remote-duplicati) and this [PiMyLifeUp article](https://pimylifeup.com/raspberry-pi-ssh-keys/).
+To require asymmetric key authentication, I followed a combination of instructions from [my PluralSight notes](./pluralsight_home_server_course_notes.md#remote-duplicati) and this [PiMyLifeUp article](https://pimylifeup.com/raspberry-pi-ssh-keys/).
 
 To generate a key pair, I recommend following the [instructions on GitHub](https://help.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh).
 
@@ -146,7 +146,7 @@ $ sudo parted
 # Make a new partition table (guid partition table)
 (parted) mklabel gpt
 
-# Verify the new partition table exitsts
+# Verify the new partition table exists
 (parted) print
 
 # Make a new partition comprising the full disk
@@ -199,7 +199,7 @@ UUID=ed6c1686-5997-424d-9a0e-fa6929a53431 /mnt/calaway_1tb ext4 defaults 0 0
 ```bash
 # Reboot
 sudo reboot
-# Verify the partition loaded automatically by making sure the placholder file is not shown
+# Verify the partition loaded automatically by making sure the placeholder file is not shown
 ls /mnt/calaway_1tb
 # Since my drive was newly formatted, for me this only listed `lost+found`
 ```
