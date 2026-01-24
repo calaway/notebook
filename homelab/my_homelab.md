@@ -652,6 +652,10 @@ Customizations:
 * [fasd](https://github.com/clvv/fasd/wiki/Installing-via-Package-Managers)
 * [fzf](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/fzf)
 
+### Docker
+
+Follow instructions from the [Docker docs](https://docs.docker.com/engine/install/ubuntu/) using the apt repository method.
+
 ## Security
 
 * Disable password login
