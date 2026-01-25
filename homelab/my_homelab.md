@@ -597,6 +597,91 @@ sudo nextcloud.occ maintenance:mode --off
 ssh calaway@rphs "sudo nextcloud.occ maintenance:mode --off"
 ```
 
+## Torrent Box
+
+We will be running qBittorrent in a Docker container, with traffic routed though a VPN using Gluetun. For Gluetun I followed [this guide](https://pimylifeup.com/docker-gluetun/) and [the Gluetun VPN Unlimited docs](https://github.com/qdm12/gluetun-wiki/blob/0349d94d65357a3776ad19055418006e6ef5f619/setup/providers/vpn-unlimited.md). For qBittorrent I followed [this guide](https://pimylifeup.com/docker-qbittorrent/).
+
+First, generate an OpenVPN configuration file. For KeepSolid Unlimited VPN, go to [my.keepsolid.com/product/vpn](https://my.keepsolid.com/product/vpn) >> Add Manual Configuration >> OpenVPN >> Download Configuration and save it as `vpnunlimited.ovpn`.
+
+Create a Gluetun directory and copy the OpenVPN config file into it (the file may not be necessary, but keep it for reference):
+```bash
+mkdir -p ~/docker/gluetun
+```
+
+Create files `client.key` and `client.crt` in that directory and copy the key and certificate from the OpenVPN config file into them.
+
+Create qBittorrent directories:
+```bash
+mkdir -p ~/docker/qbittorrent/config
+mkdir -p ~/docker/qbittorrent/downloads
+```
+
+Create a `compose.yaml` file in the docker directory with config for both containers.
+```yaml
+# ~/docker/compose.yaml
+services:
+  gluetun:
+    container_name: gluetun
+    image: qmcgaw/gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - ./gluetun:/gluetun
+    ports:
+      - 8080:8080     # qBittorrent Web UI
+      - 6881:6881     # Torrent TCP
+      - 6881:6881/udp # Torrent UDP
+    environment:
+      - VPN_SERVICE_PROVIDER=vpn unlimited
+      - OPENVPN_USER=eladamri72@gmail.com
+      - OPENVPN_PASSWORD=SeasonTipHomeAgreeFilm
+      - SERVER_COUNTRIES=Canada
+      # - SERVER_COUNTRIES=United States
+    restart: unless-stopped
+
+  qbittorrent:
+    container_name: qbittorrent
+    image: qbittorrentofficial/qbittorrent-nox:latest
+    network_mode: "service:gluetun"  # Routes traffic via gluetun container
+    depends_on:
+      - gluetun
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - QBT_LEGAL_NOTICE=confirm
+      - QBT_TORRENTING_PORT=6881
+      - QBT_WEBUI_PORT=8080
+      - TZ=America/Denver
+    volumes:
+      - ./qbittorrent/config:/config
+      - ./qbittorrent/downloads:/downloads
+    restart: unless-stopped
+```
+
+For VPN locations, see `~/docker/gluetun/servers.json` or run `docker run --rm -v ./gluetun:/gluetun qmcgaw/gluetun format-servers -vpn-unlimited`.
+
+Start the containers in detached mode:
+```bash
+cd ~/docker
+docker compose up --detach
+```
+
+Check the qBittorrent logs with `docker logs qbittorrent` to find the temporary web UI password, then log into the web UI at `http://rphs:8080` with username `admin`. Navigate to settings to change the password.
+
+If this doesn't work, check the logs for troubleshooting:
+```bash
+docker logs gluetun
+docker logs qbittorrent
+```
+
+Verify traffic is routing through the VPN by checking the IP address:
+```bash
+docker exec -it qbittorrent curl https://api.ipify.org
+```
+Then look up the IP at https://ipinfo.io/xxx.xxx.xx.xx.
+
 ## Backup and Restore SD Card
 ### Backup
 
@@ -663,3 +748,10 @@ Follow instructions from the [Docker docs](https://docs.docker.com/engine/instal
 * Enable Cloudflare proxy
 * Nextcloud trusted domains
 * TLS encryption
+
+## Linux Admin Cheat Sheet
+
+```bash
+# Display all filesystems and their disk usage
+df -h
+```
