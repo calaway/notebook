@@ -616,6 +616,8 @@ mkdir -p ~/docker/qbittorrent/config
 mkdir -p ~/docker/qbittorrent/downloads
 ```
 
+To save downloads to an external hard drive, see the directory creation instructions in the media server section below.
+
 Create a `compose.yaml` file in the docker directory with config for both containers.
 ```yaml
 # ~/docker/compose.yaml
@@ -635,8 +637,8 @@ services:
       - 6881:6881/udp # Torrent UDP
     environment:
       - VPN_SERVICE_PROVIDER=vpn unlimited
-      - OPENVPN_USER=eladamri72@gmail.com
-      - OPENVPN_PASSWORD=SeasonTipHomeAgreeFilm
+      - OPENVPN_USER=myemail@gmail.com # Replace
+      - OPENVPN_PASSWORD=[[REDACTED]] # Replace
       - SERVER_COUNTRIES=Canada
       # - SERVER_COUNTRIES=United States
     restart: unless-stopped
@@ -656,7 +658,7 @@ services:
       - TZ=America/Denver
     volumes:
       - ./qbittorrent/config:/config
-      - ./qbittorrent/downloads:/downloads
+      - ./qbittorrent/downloads:/downloads # Optionally change to external drive path
     restart: unless-stopped
 ```
 
@@ -668,7 +670,7 @@ cd ~/docker
 docker compose up --detach
 ```
 
-Check the qBittorrent logs with `docker logs qbittorrent` to find the temporary web UI password, then log into the web UI at `http://rphs:8080` with username `admin`. Navigate to settings to change the password.
+Check the qBittorrent logs with `docker logs qbittorrent` to find the temporary web UI password, then log into the web UI at http://rphs:8080 with username `admin`. Navigate to settings to change the password.
 
 If this doesn't work, check the logs for troubleshooting:
 ```bash
@@ -681,6 +683,42 @@ Verify traffic is routing through the VPN by checking the IP address:
 docker exec -it qbittorrent curl https://api.ipify.org
 ```
 Then look up the IP at https://ipinfo.io/xxx.xxx.xx.xx.
+
+## Media Server
+
+I followed [this guide](https://pimylifeup.com/jellyfin-docker/) to install Jellyfin in Docker.
+
+Create a media directory and set owner & permissions:
+```bash
+sudo mkdir -p /mnt/calaway_1tb/media/{movies,tv}
+sudo mkdir -p /mnt/calaway_1tb/media/downloads/{incomplete,complete}
+sudo chown -R $USER:$USER /mnt/calaway_1tb/media
+sudo chmod -R 755 /mnt/calaway_1tb/media
+```
+
+Create a docker compose file:
+```yaml
+# ~/docker/jellyfin/compose.yaml
+services:
+  jellyfin:
+    container_name: jellyfin
+    image: jellyfin/jellyfin:latest
+    user: 1000:1000
+    network_mode: "host"
+    volumes:
+      - ./config:/config
+      - ./cache:/cache
+      - /mnt/calaway_1tb/media:/media:ro
+    restart: unless-stopped
+```
+
+Start the container in detached mode:
+```bash
+cd ~/docker/jellyfin
+docker compose up --detach
+```
+
+Access the web UI at http://rphs:8096 and follow the setup wizard.
 
 ## Backup and Restore SD Card
 ### Backup
