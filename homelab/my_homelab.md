@@ -224,6 +224,52 @@ ls /mnt/calaway_1tb
 # Since my drive was newly formatted, for me this only listed `lost+found`
 ```
 
+### Share via Samba
+
+To browse the external hard drive from a Mac on the local network via Finder, I set up Samba (SMB) file sharing.
+
+```bash
+# Install Samba
+sudo apt install samba samba-vfs-modules -y
+
+# Add the calaway user to Samba and set a password
+sudo smbpasswd -a calaway
+
+# Back up the original config
+sudo cp /etc/samba/smb.conf{,.bak}
+
+# Add the storage share to the config
+sudo tee -a /etc/samba/smb.conf << 'EOF'
+
+# External hard drive share - entire 1TB storage
+[storage]
+path = /mnt/calaway_1tb
+browsable = yes
+read only = yes
+guest ok = no
+valid users = calaway
+comment = External 1TB storage (media, nextcloud data, downloads)
+EOF
+
+# Validate the config syntax
+testparm -s
+
+# Restart Samba services
+sudo systemctl restart smbd nmbd
+
+# Verify services are running
+sudo systemctl status smbd --no-pager
+```
+
+From a Mac on the same network, you can now browse the share:
+1. Open **Finder**
+2. Press **Cmd+K** (or Go → Connect to Server)
+3. Enter: `smb://calaway@rphs`
+4. When prompted, enter the Samba password you set above
+5. Select the **storage** share to mount
+
+The share is configured as **read-only** for safety. To enable write access, change `read only = yes` to `read only = no` in the Samba config and restart the services.
+
 ## Networking
 
 ### Create a VLAN
